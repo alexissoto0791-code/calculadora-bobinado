@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora de transformadores</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #eef1f3;
+  --surface: #ffffff;
+  --ink: #14202b;
+  --muted: #56646f;
+  --line: #d3dade;
+  --primary: #0e6b73;
+  --primary-ink: #ffffff;
+  --soft: #e3eef0;
+  --copper: #c0692f;
+  --err: #a3262a;
+  --err-bg: #fbeaea;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101a20;
+    --surface: #17242c;
+    --ink: #e6edf1;
+    --muted: #98a8b3;
+    --line: #2a3a45;
+    --primary: #4fc1c9;
+    --primary-ink: #06262a;
+    --soft: #1d3138;
+    --copper: #e08a4e;
+    --err: #ff9a9d;
+    --err-bg: #3a1e20;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101a20;
+  --surface: #17242c;
+  --ink: #e6edf1;
+  --muted: #98a8b3;
+  --line: #2a3a45;
+  --primary: #4fc1c9;
+  --primary-ink: #06262a;
+  --soft: #1d3138;
+  --copper: #e08a4e;
+  --err: #ff9a9d;
+  --err-bg: #3a1e20;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.wrap { max-width: 640px; margin: 0 auto; padding: 0 16px 48px; }
+header.top { padding: 20px 0 12px; }
+h1 { font-size: 22px; line-height: 1.25; margin: 0 0 4px; font-weight: 600; }
+header.top p { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+nav.tabs {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 5;
+  display: flex;
+  gap: 4px;
+  background: var(--bg);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+nav.tabs button {
+  flex: 1;
+  font: inherit;
+  font-weight: 500;
+  font-size: 14.5px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 2px;
+  min-height: 44px;
+  cursor: pointer;
+}
+nav.tabs button[aria-selected="true"] { background: var(--soft); color: var(--primary); }
+button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.section { padding: 16px; }
+.section + .section { border-top: 1px solid var(--line); }
+.section h2 { font-size: 16px; margin: 0 0 12px; font-weight: 600; }
+.section h2 small { display: block; font-weight: 400; color: var(--muted); font-size: 13.5px; margin-top: 2px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label, .field .lbl { font-size: 14.5px; font-weight: 500; }
+.hint { font-size: 13px; color: var(--muted); line-height: 1.4; }
+input[type="number"], input[type="text"], select {
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-height: 44px;
+  width: 100%;
+}
+.seg { display: flex; gap: 6px; }
+.seg label {
+  flex: 1;
+  text-align: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 6px;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 500;
+  background: var(--bg);
+}
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg input:checked + span { color: var(--primary); }
+.seg label:has(input:checked) { border-color: var(--primary); background: var(--soft); color: var(--primary); }
+.seg label:has(input:focus-visible) { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  font: inherit; font-weight: 500; font-size: 15px;
+  min-height: 44px; padding: 10px 16px;
+  border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+.btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn.danger { color: var(--err); }
+
+.results { margin-top: 16px; }
+.empty { padding: 20px 16px; color: var(--muted); font-size: 15px; }
+.msg-err { background: var(--err-bg); color: var(--err); border-radius: 8px; padding: 12px 14px; margin: 16px; font-size: 14.5px; }
+.callout { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: var(--soft); font-size: 14.5px; line-height: 1.4; }
+.callout.warn { background: var(--err-bg); color: var(--err); }
+.step h3 { font-size: 15px; margin: 0 0 8px; font-weight: 600; }
+.step .calc { font-size: 14px; color: var(--muted); margin: 6px 0 0; }
+.big { font-size: 34px; line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; }
+.big small { font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-left: 4px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pair .who { font-size: 13.5px; color: var(--muted); margin-bottom: 2px; }
+
+.wire { display: flex; gap: 14px; align-items: center; padding: 6px 0; }
+.wire + .wire { border-top: 1px dashed var(--line); margin-top: 8px; padding-top: 14px; }
+.wire svg { flex: none; }
+.wire .name { font-size: 13.5px; color: var(--muted); }
+.wire .awg { font-size: 24px; font-weight: 600; line-height: 1.2; }
+.wire .det { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+
+.saveRow { display: grid; gap: 10px; }
+.list { list-style: none; margin: 0; padding: 0; }
+.list li { padding: 14px 16px; }
+.list li + li { border-top: 1px solid var(--line); }
+.list .t { font-weight: 600; }
+.list .d { font-size: 13.5px; color: var(--muted); }
+.list .s { font-size: 14.5px; margin: 6px 0 10px; }
+
+dl { margin: 0; }
+dt { font-weight: 600; margin-top: 14px; }
+dt:first-child { margin-top: 0; }
+dd { margin: 2px 0 0; color: var(--muted); font-size: 15px; }
+.formula { background: var(--bg); border-radius: 8px; padding: 10px 12px; margin: 8px 0; font-size: 15px; }
+ul.plain { margin: 8px 0 0; padding-left: 20px; color: var(--muted); font-size: 15px; }
+ul.plain li + li { margin-top: 6px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 14.5px; z-index: 10; }
+</style>
+<!-- Cliente oficial de Supabase (@supabase/supabase-js) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Calculadora de transformadores</h1>
+    <p>Espiras del primario y secundario, y calibre AWG del cobre, para transformadores de distribución.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button role="tab" id="t-calc" aria-selected="true" aria-controls="tab-calc">Calcular</button>
+    <button role="tab" id="t-nuc" aria-selected="false" aria-controls="tab-nuc">Prueba</button>
+    <button role="tab" id="t-hist" aria-selected="false" aria-controls="tab-hist">Guardados</button>
+    <button role="tab" id="t-guia" aria-selected="false" aria-controls="tab-guia">Guía</button>
+  </nav>
+
+  <main>
+    <!-- CALCULAR -->
+    <section id="tab-calc" role="tabpanel" aria-labelledby="t-calc">
+      <div class="panel">
+        <div class="section">
+          <h2>Datos del transformador</h2>
+          <div class="grid">
+            <div class="field" style="grid-column: 1 / -1;">
+              <span class="lbl" id="lblFases">Tipo</span>
+              <div class="seg" role="radiogroup" aria-labelledby="lblFases">
+                <label><input type="radio" name="fases" value="1"><span>Monofásico</span></label>
+                <label><input type="radio" name="fases" value="3" checked><span>Trifásico</span></label>
+              </div>
+            </div>
+            <div class="field" id="rowConexion" style="grid-column: 1 / -1;">
+              <label for="conexion">Conexión (primario – secundario)</label>
+              <select id="conexion">
+                <option value="DY">Delta – Estrella (la más común en distribución)</option>
+                <option value="YY">Estrella – Estrella</option>
+                <option value="DD">Delta – Delta</option>
+                <option value="YD">Estrella – Delta</option>
+              </select>
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="kva">Potencia (kVA)</label>
+              <input id="kva" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 75">
+            </div>
+            <div class="field">
+              <label for="vp">Tensión primaria (V)</label>
+              <input id="vp" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 13200">
+              <span class="hint">Lado de alta tensión, entre líneas.</span>
+            </div>
+            <div class="field">
+              <label for="vs">Tensión secundaria (V)</label>
+              <input id="vs" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 220">
+              <span class="hint">Lado de baja tensión, entre líneas.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Espiras<small>Elige con qué datos quieres calcular.</small></h2>
+          <div class="grid">
+            <div class="field" style="grid-column: 1 / -1;">
+              <div class="seg" role="radiogroup" aria-label="Método de cálculo">
+                <label><input type="radio" name="modo" value="espiras" checked><span>Tengo las espiras del tap</span></label>
+                <label><input type="radio" name="modo" value="nucleo"><span>Tengo datos del núcleo</span></label>
+              </div>
+            </div>
+            <div class="field" id="rowN" style="grid-column: 1 / -1;">
+              <label for="n">N: espiras del tap</label>
+              <input id="n" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 120">
+            </div>
+            <div class="field" id="rowSec" hidden>
+              <label for="sec">Sección del núcleo (cm²)</label>
+              <input id="sec" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 115">
+              <span class="hint">Sección neta de hierro. Si tienes la bruta, multiplícala por 0.95 aprox.</span>
+            </div>
+            <div class="field" id="rowVt" hidden>
+              <label for="vt">Voltios por espira (V/esp)</label>
+              <input id="vt" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 4.9">
+              <span class="hint">Si lo dejas vacío, se calcula con la sección.</span>
+            </div>
+            <div class="field" id="rowB" hidden>
+              <label for="b">Inducción B (T)</label>
+              <input id="b" type="number" inputmode="decimal" step="any" min="0" value="1.6">
+              <span class="hint">Típico: 1.5 a 1.7 en acero al silicio. Solo se usa si no ingresas los voltios por espira.</span>
+            </div>
+            <div class="field" id="rowF" hidden>
+              <label for="f">Frecuencia (Hz)</label>
+              <input id="f" type="number" inputmode="decimal" step="any" min="0" value="60">
+            </div>
+            <div class="field">
+              <label for="pct">Paso del tap (%)</label>
+              <input id="pct" type="number" inputmode="decimal" step="any" min="0" value="2.5">
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="tap">Tap: espiras a sumar al primario</label>
+              <input id="tap" type="number" inputmode="decimal" step="any" min="0" placeholder="Vacío = usa el valor de N">
+              <span class="hint">Si lo dejas vacío, se suma N. Con datos del núcleo, N se calcula a partir del paso del tap.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Cobre</h2>
+          <div class="field">
+            <label for="j">Densidad de corriente (A/mm²)</label>
+            <input id="j" type="number" inputmode="decimal" step="any" min="0" value="3">
+            <span class="hint">Cuánta corriente soporta cada mm² de cobre. Un valor típico es de 2.5 a 3.5.</span>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="actions">
+            <button class="btn" id="btnReset" type="button">Restablecer</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="results panel" id="results" aria-live="polite"></div>
+
+      <div class="panel results" id="saveBox" hidden>
+        <div class="section saveRow">
+          <div class="field">
+            <label for="nombre">Nombre del diseño (opcional)</label>
+            <input id="nombre" type="text" maxlength="60" placeholder="Ej. Transformador de 75 kVA, obra Norte">
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="btnSave" type="button">Guardar diseño</button>
+            <button class="btn" id="btnCopy" type="button">Copiar resumen</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRUEBA (NUCLEO DESCONOCIDO) -->
+    <section id="tab-nuc" role="tabpanel" aria-labelledby="t-nuc" hidden>
+      <div class="panel">
+        <div class="section">
+          <h2>Núcleo<small>Para núcleos monofásicos de los que no tienes datos. Mide con regla o calibrador.</small></h2>
+          <div class="grid">
+            <div class="field">
+              <label for="ca">Ancho de la pierna central (cm)</label>
+              <input id="ca" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 4">
+            </div>
+            <div class="field">
+              <label for="cb">Espesor del paquete de láminas (cm)</label>
+              <input id="cb" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 5">
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="cfs">Factor de apilamiento</label>
+              <input id="cfs" type="number" inputmode="decimal" step="any" min="0" value="0.95">
+              <span class="hint">Porcentaje real de hierro entre las láminas. Usa 0.9 si están flojas u oxidadas.</span>
+            </div>
+            <div class="field">
+              <label for="cww">Ancho de la ventana (cm)</label>
+              <input id="cww" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 3">
+            </div>
+            <div class="field">
+              <label for="chw">Alto de la ventana (cm)</label>
+              <input id="chw" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 8">
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <span class="hint">La ventana es el hueco por donde pasa el cobre. Es opcional, pero con ella la potencia se calcula mejor y se verifica que el cobre cabe.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Prueba con espiras<small>Enrolla unas espiras de prueba y conéctalas a la red con el secundario abierto.</small></h2>
+          <div class="grid">
+            <div class="field">
+              <label for="tnp">Espiras de prueba enrolladas</label>
+              <input id="tnp" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 150">
+            </div>
+            <div class="field">
+              <label for="tv">Voltaje aplicado (V)</label>
+              <input id="tv" type="number" inputmode="decimal" step="any" min="0" value="110">
+            </div>
+            <div class="field">
+              <label for="ti">Corriente medida (A)</label>
+              <input id="ti" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 0.35">
+            </div>
+            <div class="field">
+              <label for="tf">Frecuencia (Hz)</label>
+              <input id="tf" type="number" inputmode="decimal" step="any" min="0" value="60">
+            </div>
+            <div class="field">
+              <label for="tns">Espiras de la bobina auxiliar</label>
+              <input id="tns" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 10">
+            </div>
+            <div class="field">
+              <label for="tvi">Voltaje medido en la auxiliar (V)</label>
+              <input id="tvi" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 7.5">
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <span class="hint">La bobina auxiliar es opcional. Si la usas, los voltios por espira salen de su lectura, que es más precisa.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Transformador que quieres construir</h2>
+          <div class="grid">
+            <div class="field">
+              <label for="dvp">Tensión primaria (V)</label>
+              <input id="dvp" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 110">
+            </div>
+            <div class="field">
+              <label for="dvs">Tensión secundaria (V)</label>
+              <input id="dvs" type="number" inputmode="decimal" step="any" min="0" placeholder="Ej. 24">
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="dva">Potencia deseada (VA)</label>
+              <input id="dva" type="number" inputmode="decimal" step="any" min="0" placeholder="Vacío = la máxima del núcleo">
+              <span class="hint">Si la dejas vacía se usa la máxima que aguanta el núcleo. Para calcularla necesitas las medidas de la ventana.</span>
+            </div>
+            <div class="field">
+              <label for="db">Inducción de diseño B (T)</label>
+              <input id="db" type="number" inputmode="decimal" step="any" min="0" value="1.5">
+              <span class="hint">En núcleos usados, 1.4 a 1.5 es más seguro.</span>
+            </div>
+            <div class="field">
+              <label for="dj">Densidad de corriente (A/mm²)</label>
+              <input id="dj" type="number" inputmode="decimal" step="any" min="0" value="2.5">
+              <span class="hint">En transformadores secos, de 2 a 3.</span>
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="dku">Llenado de la ventana</label>
+              <input id="dku" type="number" inputmode="decimal" step="any" min="0" value="0.3">
+              <span class="hint">Fracción de la ventana que ocupa el cobre. Lo típico es 0.3.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="actions">
+            <button class="btn" id="nReset" type="button">Restablecer</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="results panel" id="nResults" aria-live="polite"></div>
+
+      <div class="panel results" id="nSaveBox" hidden>
+        <div class="section saveRow">
+          <div class="field">
+            <label for="nnombre">Nombre del diseño (opcional)</label>
+            <input id="nnombre" type="text" maxlength="60" placeholder="Ej. Núcleo E-I del taller">
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="nSave" type="button">Guardar diseño</button>
+            <button class="btn" id="nCopy" type="button">Copiar resumen</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GUARDADOS -->
+    <section id="tab-hist" role="tabpanel" aria-labelledby="t-hist" hidden>
+      <div class="panel" id="histPanel"></div>
+    </section>
+
+    <!-- GUIA -->
+    <section id="tab-guia" role="tabpanel" aria-labelledby="t-guia" hidden>
+      <div class="panel">
+        <div class="section">
+          <h2>Qué significa cada dato</h2>
+          <dl>
+            <dt>RT: relación de transformación</dt>
+            <dd>Cuántas veces mayor es el voltaje del primario frente al del secundario, medido por fase.</dd>
+            <dt>N: espiras del tap</dt>
+            <dd>Espiras que corresponden a un paso del cambiador de derivaciones (por defecto 2.5 % del primario).</dd>
+            <dt>Tap</dt>
+            <dd>Espiras extra que se agregan al primario para poder ajustar el voltaje de salida.</dd>
+            <dt>N2 y N1</dt>
+            <dd>Espiras del secundario (baja tensión) y del primario (alta tensión, con el tap incluido).</dd>
+            <dt>Sección del núcleo</dt>
+            <dd>Área de hierro por donde pasa el flujo magnético, en cm². Entre más grande, menos espiras se necesitan.</dd>
+            <dt>Voltios por espira (V/esp)</dt>
+            <dd>Voltaje que se genera en cada espira. Con este dato se obtienen las espiras: voltaje del devanado ÷ voltios por espira.</dd>
+            <dt>Inducción B</dt>
+            <dd>Qué tan cargado magnéticamente está el núcleo, en teslas (T). En acero al silicio de distribución es típico entre 1.5 y 1.7 T.</dd>
+            <dt>Densidad de corriente</dt>
+            <dd>Corriente por cada mm² de cobre. Un valor menor da un conductor más grueso, que se calienta menos.</dd>
+            <dt>AWG</dt>
+            <dd>Escala de calibres de cable. Mientras menor es el número, más grueso es el conductor. Los calibres 1/0, 2/0, 3/0 y 4/0 son más gruesos que el 1.</dd>
+          </dl>
+        </div>
+        <div class="section">
+          <h2>Fórmulas usadas</h2>
+          <div class="formula">N2 = N ÷ paso del tap ÷ RT</div>
+          <div class="formula">N1 = (RT × N2) + Tap</div>
+          <div class="formula">Voltios por espira = 4.44 × frecuencia × B × sección (m²)</div>
+          <div class="formula">N2 = voltaje por fase del secundario ÷ voltios por espira</div>
+          <div class="formula">Espiras del tap (N) = RT × N2 × paso del tap</div>
+          <div class="formula">Corriente = kVA × 1000 ÷ (fases × voltaje por fase)</div>
+          <div class="formula">Sección de cobre (mm²) = corriente ÷ densidad de corriente</div>
+        </div>
+        <div class="section">
+          <h2>Cómo se calcula</h2>
+          <ul class="plain">
+            <li>En trifásico, la calculadora usa el voltaje por fase según la conexión: en estrella es el voltaje de línea ÷ √3, y en delta es el voltaje de línea.</li>
+            <li>N2 y N1 se redondean al número entero más cercano. Para N1 se usa el N2 ya redondeado.</li>
+            <li>Con datos del núcleo, si no ingresas los voltios por espira se calculan con la sección, la inducción B y la frecuencia. Después se verifica la inducción real con el N2 redondeado.</li>
+            <li>El calibre elegido es el más delgado cuya sección es igual o mayor que la requerida.</li>
+            <li>Si la sección supera la del calibre 4/0, se indica cuántos conductores 4/0 en paralelo se necesitan.</li>
+            <li>Es un cálculo de referencia. No incluye el aislamiento ni las pérdidas.</li>
+          </ul>
+        </div>
+        <div class="section">
+          <h2>Cómo hacer la prueba con espiras</h2>
+          <ul class="plain">
+            <li>Mide el ancho de la pierna central y el espesor del paquete de láminas. Si puedes, mide también la ventana.</li>
+            <li>La pestaña Prueba te dice cuántas espiras de prueba enrollar. Enróllalas y agrega una bobina auxiliar de unas 10 espiras.</li>
+            <li>Conecta las espiras de prueba a la red (por ejemplo 110 V) con una bombilla de 100 W en serie o un variac, y con fusible. Deja abierta la bobina auxiliar.</li>
+            <li>Mide la corriente que consume (corriente en vacío) y el voltaje en la bobina auxiliar. Con esos datos se obtienen los voltios por espira y qué tan cargado está el núcleo.</li>
+            <li>Si la corriente es muy alta, el núcleo se calienta o zumba fuerte, desconecta: falta espiras o el núcleo está saturado.</li>
+            <li>Esta pestaña sirve para núcleos monofásicos. En un núcleo trifásico, la prueba y el cálculo se hacen por columna.</li>
+          </ul>
+          <div class="formula">Voltios por espira (prueba) = voltaje medido ÷ espiras</div>
+          <div class="formula">Inducción B = voltios por espira ÷ (4.44 × frecuencia × sección en m²)</div>
+          <div class="formula">Potencia máxima = 2.22 × frecuencia × B × densidad de corriente × llenado × sección × ventana</div>
+          <div class="formula">Corriente en vacío = amperios-vuelta de la prueba ÷ espiras del primario</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  /* ---------- Supabase (opcional) ----------
+     Pega aquí los datos de tu proyecto (Project Settings > API).
+     Si dejas la URL o la clave vacías, la app guarda solo en este navegador. */
+  var SUPABASE_URL = '';      // Ej. 'https://abcdefgh.supabase.co'
+  var SUPABASE_KEY = '';      // Clave "anon" o "publishable". NUNCA pongas aquí la clave service_role.
+  var SUPABASE_TABLE = 'disenos';
+  var sb = null;
+  try {
+    if (SUPABASE_URL && SUPABASE_KEY && window.supabase) {
+      sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+  } catch (e) { sb = null; }
+
+  // Convierte un diseño guardado en la fila de la tabla. Si tu tabla tiene otras columnas, cámbialo aquí.
+  function filaSupabase(item) {
+    return {
+      tipo: item.tipo || 'espiras',   // 'espiras' (pestaña Calcular) o 'nucleo' (pestaña Prueba)
+      nombre: item.name,
+      datos: item.x,                  // datos ingresados en el formulario
+      resultados: item.r              // resultados del cálculo
+    };
+  }
+  // Devuelve una promesa con el error (o null si se guardó bien). Nunca lanza excepciones.
+  function enviarSupabase(item) {
+    if (!sb) return Promise.resolve(null);
+    return sb.from(SUPABASE_TABLE).insert(filaSupabase(item)).then(
+      function (res) { return res.error || null; },
+      function (e) { return e || new Error('error de red'); }
+    );
+  }
+  var SQ3 = Math.sqrt(3);
+  var STORE_KEY = 'trafo-disenos-v1';
+  var CONN = {
+    DY: { p: 'D', s: 'Y' }, YY: { p: 'Y', s: 'Y' },
+    DD: { p: 'D', s: 'D' }, YD: { p: 'Y', s: 'D' }
+  };
+  var current = null;
+
+  /* ---------- utilidades ---------- */
+  function fmt(v, d) {
+    if (!isFinite(v)) return '-';
+    return v.toLocaleString('es', { maximumFractionDigits: d === undefined ? 2 : d });
+  }
+  function num(id) { var v = parseFloat($(id).value); return isFinite(v) ? v : NaN; }
+  function phaseV(line, t) { return t === 'Y' ? line / SQ3 : line; }
+  function awgDiam(n) { return 0.127 * Math.pow(92, (36 - n) / 39); }
+  function awgArea(n) { var d = awgDiam(n); return Math.PI * d * d / 4; }
+  function awgLabel(n) { return n >= 1 ? 'AWG ' + n : (1 - n) + '/0 AWG'; }
+  function pickAwg(area) {
+    for (var n = 40; n >= -3; n--) {
+      if (awgArea(n) >= area) return { n: n, parallel: 1 };
+    }
+    return { n: -3, parallel: Math.ceil(area / awgArea(-3)) };
+  }
+  function toast(t, ms) {
+    var el = $('toast'); el.textContent = t; el.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(function () { el.hidden = true; }, ms || 2200);
+  }
+
+  /* ---------- cálculo ---------- */
+  function readInputs() {
+    return {
+      fases: document.querySelector('input[name="fases"]:checked').value,
+      conexion: $('conexion').value,
+      kva: num('kva'), vp: num('vp'), vs: num('vs'),
+      modo: document.querySelector('input[name="modo"]:checked').value,
+      n: num('n'), tapRaw: $('tap').value, tap: num('tap'),
+      sec: num('sec'), vt: num('vt'), b: num('b'), f: num('f'),
+      pct: num('pct'), j: num('j')
+    };
+  }
+  function calc(x) {
+    var three = x.fases === '3';
+    var c = three ? CONN[x.conexion] : { p: 'D', s: 'D' };
+    var vfp = phaseV(x.vp, c.p), vfs = phaseV(x.vs, c.s);
+    var rt = vfp / vfs;
+    var core = x.modo === 'nucleo';
+    var vt = NaN, vtCalc = false, nTap = x.n, n2raw, n2;
+    if (core) {
+      if (x.vt > 0) { vt = x.vt; }
+      else { vt = 4.44 * x.f * x.b * (x.sec / 10000); vtCalc = true; }
+      n2raw = vfs / vt;
+      n2 = Math.round(n2raw);
+      nTap = rt * n2 * (x.pct / 100);
+    } else {
+      n2raw = nTap / (x.pct / 100) / rt;
+      n2 = Math.round(n2raw);
+    }
+    var tap = (x.tapRaw !== '' && isFinite(x.tap)) ? x.tap : nTap;
+    var n1raw = rt * n2 + tap;
+    var n1 = Math.round(n1raw);
+    var vtReal = n2 > 0 ? vfs / n2 : NaN;
+    var bReal = (core && x.sec > 0 && x.f > 0) ? vtReal / (4.44 * x.f * (x.sec / 10000)) : NaN;
+    var nph = three ? 3 : 1;
+    var ip = x.kva * 1000 / (nph * vfp);
+    var is = x.kva * 1000 / (nph * vfs);
+    function wire(i) {
+      var area = i / x.j;
+      var pick = pickAwg(area);
+      var a = awgArea(pick.n);
+      return {
+        i: i, area: area, n: pick.n, parallel: pick.parallel,
+        label: awgLabel(pick.n), areaAwg: a, diam: awgDiam(pick.n),
+        jReal: i / (a * pick.parallel)
+      };
+    }
+    return {
+      rt: rt, vfp: vfp, vfs: vfs, n2raw: n2raw, n2: n2, tap: tap,
+      n1raw: n1raw, n1: n1, pri: wire(ip), sec: wire(is),
+      core: core, vt: vt, vtCalc: vtCalc, nTap: nTap, vtReal: vtReal, bReal: bReal
+    };
+  }
+  function validate(x) {
+    var base = !(x.kva > 0) || !(x.vp > 0) || !(x.vs > 0);
+    if (x.modo === 'nucleo') {
+      var hasVt = x.vt > 0, hasSec = x.sec > 0;
+      if (base || (!hasVt && !hasSec)) return { empty: true };
+      if (!hasVt && (!(x.b > 0) || !(x.f > 0))) {
+        return { err: 'Para calcular con la sección, indica la inducción B y la frecuencia.' };
+      }
+    } else if (base || !(x.n > 0)) {
+      return { empty: true };
+    }
+    if (!(x.pct > 0)) return { err: 'El paso del tap debe ser mayor que 0.' };
+    if (!(x.j > 0)) return { err: 'La densidad de corriente debe ser mayor que 0.' };
+    if (x.tapRaw !== '' && !(x.tap >= 0)) return { err: 'El tap no puede ser negativo.' };
+    return {};
+  }
+
+  /* ---------- dibujo del conductor ---------- */
+  function wireSvg(n, parallel) {
+    var r = Math.max(2.5, awgDiam(n) / 11.68 * 27);
+    var label = awgLabel(n) + (parallel > 1 ? ', ' + parallel + ' en paralelo' : '');
+    return '<svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Sección del conductor ' + label + '">' +
+      '<circle cx="32" cy="32" r="' + (r + 2.5).toFixed(1) + '" fill="none" stroke="var(--copper)" stroke-opacity=".35" stroke-width="2"/>' +
+      '<circle cx="32" cy="32" r="' + r.toFixed(1) + '" fill="var(--copper)"/></svg>';
+  }
+  function wireBlock(name, w) {
+    var par = w.parallel > 1
+      ? '<div class="det">Supera el calibre 4/0: usa ' + w.parallel + ' conductores 4/0 en paralelo.</div>' : '';
+    return '<div class="wire">' + wireSvg(w.n, w.parallel) +
+      '<div><div class="name">' + name + '</div>' +
+      '<div class="awg">' + (w.parallel > 1 ? w.parallel + ' × ' : '') + w.label + '</div>' +
+      '<div class="det">Corriente ' + fmt(w.i, 2) + ' A. Sección requerida ' + fmt(w.area, 3) + ' mm². ' +
+      'Sección del calibre ' + fmt(w.areaAwg * w.parallel, 3) + ' mm² (' + fmt(w.jReal, 2) + ' A/mm²).</div>' + par + '</div></div>';
+  }
+
+  /* ---------- resultados ---------- */
+  function espirasLines(x, r, pctTxt) {
+    var h = '';
+    if (r.core) {
+      h += '<p class="calc">Voltios por espira: ' + fmt(r.vt, 3) + ' V' +
+        (r.vtCalc ? ' (4.44 × ' + fmt(x.f, 1) + ' Hz × ' + fmt(x.b, 2) + ' T × ' + fmt(x.sec / 10000, 5) + ' m²).' : ' (dato ingresado).') + '</p>';
+      h += '<p class="calc">N2 = ' + fmt(r.vfs, 1) + ' V ÷ ' + fmt(r.vt, 3) + ' V/esp = ' + fmt(r.n2raw, 2) + ', redondeado a ' + fmt(r.n2, 0) + '.</p>';
+      h += '<p class="calc">Espiras del tap (N) = ' + fmt(r.rt, 3) + ' × ' + fmt(r.n2, 0) + ' × ' + pctTxt + ' % = ' + fmt(r.nTap, 2) + '.</p>';
+    } else {
+      h += '<p class="calc">N2 = ' + fmt(x.n, 2) + ' ÷ ' + pctTxt + ' % ÷ ' + fmt(r.rt, 3) + ' = ' + fmt(r.n2raw, 2) + ', redondeado a ' + fmt(r.n2, 0) + '.</p>';
+    }
+    h += '<p class="calc">N1 = (' + fmt(r.rt, 3) + ' × ' + fmt(r.n2, 0) + ') + ' + fmt(r.tap, 2) + ' = ' + fmt(r.n1raw, 2) + ', redondeado a ' + fmt(r.n1, 0) + '.</p>';
+    if (r.core && isFinite(r.bReal)) {
+      var alta = r.bReal > 1.75, baja = r.bReal < 1.3;
+      h += '<p class="calc"' + (alta ? ' style="color:var(--err)"' : '') + '>Inducción real en el núcleo: ' + fmt(r.bReal, 2) + ' T' +
+        (alta ? '. Es alta: el núcleo puede saturarse, considera más sección o más espiras.'
+          : baja ? '. Es baja: el núcleo queda holgado.' : '. Está en el rango típico.') + '</p>';
+    }
+    return h;
+  }
+  function render() {
+    var x = readInputs();
+    var v = validate(x);
+    var box = $('results'), save = $('saveBox');
+    current = null;
+    if (v.empty) {
+      box.innerHTML = '<div class="empty">' + (x.modo === 'nucleo'
+        ? 'Completa la potencia, las dos tensiones y la sección del núcleo o los voltios por espira para ver los resultados.'
+        : 'Completa la potencia, las dos tensiones y las espiras del tap (N) para ver los resultados.') + '</div>';
+      save.hidden = true; return;
+    }
+    if (v.err) {
+      box.innerHTML = '<div class="msg-err">' + v.err + '</div>'; save.hidden = true; return;
+    }
+    var r = calc(x);
+    if (r.n2 < 1) {
+      box.innerHTML = '<div class="msg-err">N2 resulta menor que 1 espira. Revisa las tensiones y los datos de espiras o del núcleo.</div>';
+      save.hidden = true; return;
+    }
+    current = { x: x, r: r };
+    var pctTxt = fmt(x.pct, 2);
+    box.innerHTML =
+      '<div class="section step"><h3>1. Relación de transformación</h3>' +
+      '<div class="big">' + fmt(r.rt, 3) + '<small>RT</small></div>' +
+      '<p class="calc">' + fmt(r.vfp, 1) + ' V ÷ ' + fmt(r.vfs, 1) + ' V (voltajes por fase)</p></div>' +
+
+      '<div class="section step"><h3>2. Espiras</h3><div class="pair">' +
+      '<div><div class="who">Secundario</div><div class="big">' + fmt(r.n2, 0) + '<small>N2</small></div></div>' +
+      '<div><div class="who">Primario</div><div class="big">' + fmt(r.n1, 0) + '<small>N1</small></div></div></div>' +
+      espirasLines(x, r, pctTxt) + '</div>' +
+
+      '<div class="section step"><h3>3. Calibre del cobre</h3>' +
+      wireBlock('Devanado primario', r.pri) + wireBlock('Devanado secundario', r.sec) + '</div>';
+    save.hidden = false;
+    if (!$('nombre').value) $('nombre').placeholder = defaultName(x);
+  }
+  function defaultName(x) {
+    return fmt(x.kva, 2) + ' kVA ' + fmt(x.vp, 0) + '/' + fmt(x.vs, 0) + ' V';
+  }
+  function summaryText() {
+    if (!current) return '';
+    var x = current.x, r = current.r;
+    return [
+      'Transformador ' + (x.fases === '3' ? 'trifásico' : 'monofásico') + ', ' + defaultName(x),
+      'RT: ' + fmt(r.rt, 3),
+      r.core ? 'Voltios por espira: ' + fmt(r.vt, 3) + ' V' + (isFinite(r.bReal) ? ', inducción real ' + fmt(r.bReal, 2) + ' T' : '') : '',
+      'N2 (secundario): ' + fmt(r.n2, 0) + ' espiras',
+      'N1 (primario): ' + fmt(r.n1, 0) + ' espiras (tap ' + fmt(r.tap, 2) + ')',
+      'Primario: ' + fmt(r.pri.i, 2) + ' A, ' + (r.pri.parallel > 1 ? r.pri.parallel + ' × ' : '') + r.pri.label,
+      'Secundario: ' + fmt(r.sec.i, 2) + ' A, ' + (r.sec.parallel > 1 ? r.sec.parallel + ' × ' : '') + r.sec.label,
+      'Densidad de corriente: ' + fmt(x.j, 2) + ' A/mm²'
+    ].filter(Boolean).join('\n');
+  }
+
+  /* ---------- guardado local ---------- */
+  var memoryStore = [];
+  function loadAll() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return memoryStore; }
+  }
+  function saveAll(list) {
+    memoryStore = list;
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(list)); return true; }
+    catch (e) { return false; }
+  }
+  function renderHist() {
+    var list = loadAll(), p = $('histPanel');
+    if (!list.length) {
+      p.innerHTML = '<div class="empty">Aún no hay diseños guardados. Calcula uno y toca Guardar diseño.</div>';
+      return;
+    }
+    p.innerHTML = '<ul class="list">' + list.map(function (it, i) {
+      var r = it.r;
+      var d = new Date(it.date).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
+      var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+      return '<li><div class="t">' + esc(it.name) + '</div><div class="d">' + d + '</div>' +
+        '<div class="s">' + (it.tipo === 'nucleo'
+          ? 'Con prueba de núcleo, ' + fmt(r.ac, 1) + ' cm². Primario ' + fmt(r.np, 0) + ' espiras (' + wl(r.wp) + '), secundario ' + fmt(r.ns, 0) + ' espiras (' + wl(r.ws) + ').'
+          : 'N2 ' + fmt(r.n2, 0) + ', N1 ' + fmt(r.n1, 0) + '. Primario ' + wl(r.pri) + ', secundario ' + wl(r.sec) + '.') + '</div>' +
+        '<div class="actions"><button class="btn" data-load="' + i + '" type="button">Cargar</button>' +
+        '<button class="btn danger" data-del="' + i + '" type="button">Eliminar</button></div></li>';
+    }).join('') + '</ul>';
+  }
+
+  /* ---------- pestaña Prueba (núcleo desconocido) ---------- */
+  var nCurrent = null;
+  var NIDS = ['ca', 'cb', 'cfs', 'cww', 'chw', 'tnp', 'tv', 'ti', 'tf', 'tns', 'tvi', 'dvp', 'dvs', 'dva', 'db', 'dj', 'dku'];
+  var N_DEF = { cfs: '0.95', tv: '110', tf: '60', db: '1.5', dj: '2.5', dku: '0.3' };
+  function wl(w) { return (w.parallel > 1 ? w.parallel + ' × ' : '') + w.label; }
+  function wireFor(i, j) {
+    var area = i / j, pick = pickAwg(area), a = awgArea(pick.n);
+    return {
+      i: i, area: area, n: pick.n, parallel: pick.parallel, label: awgLabel(pick.n),
+      areaAwg: a, diam: awgDiam(pick.n), jReal: i / (a * pick.parallel)
+    };
+  }
+  function readN() {
+    var o = {};
+    NIDS.forEach(function (id) { o[id] = num(id); });
+    return o;
+  }
+  function calcN(x) {
+    var f = x.tf > 0 ? x.tf : 60, r = { f: f };
+    r.ag = x.ca * x.cb;
+    r.ac = r.ag * x.cfs;
+    var acm = r.ac / 10000;
+    r.aw = (x.cww > 0 && x.chw > 0) ? x.cww * x.chw : NaN;
+    r.nRec = (x.tv > 0 && x.db > 0) ? x.tv / (4.44 * f * x.db * acm) : NaN;
+    r.hasTest = x.tnp > 0 && x.tv > 0;
+    if (r.hasTest) {
+      r.vtApp = x.tv / x.tnp;
+      r.useAux = x.tns > 0 && x.tvi > 0;
+      r.vtAux = r.useAux ? x.tvi / x.tns : NaN;
+      r.vtTest = r.useAux ? r.vtAux : r.vtApp;
+      r.bTest = r.vtTest / (4.44 * f * acm);
+      r.mmf = x.ti > 0 ? x.tnp * x.ti : NaN;
+      r.mismatch = r.useAux ? Math.abs(r.vtAux - r.vtApp) / r.vtApp : NaN;
+    }
+    if (x.dvp > 0 && x.dvs > 0 && x.db > 0 && x.dj > 0) {
+      r.vtD = 4.44 * f * x.db * acm;
+      r.np = Math.round(x.dvp / r.vtD);
+      r.ns = Math.round(x.dvs / r.vtD);
+      r.ku = x.dku > 0 ? x.dku : 0.3;
+      var sWin = isFinite(r.aw) ? 2.22 * f * x.db * (x.dj * 1e6) * r.ku * acm * (r.aw / 10000) : NaN;
+      r.sBy = isFinite(sWin) ? 'ventana' : 'regla';
+      r.sMax = isFinite(sWin) ? sWin : Math.pow(r.ag / 1.15, 2);
+      r.sUsed = x.dva > 0 ? x.dva : r.sMax;
+      r.ip = r.sUsed / x.dvp;
+      r.is = r.sUsed / x.dvs;
+      r.wp = wireFor(r.ip, x.dj);
+      r.ws = wireFor(r.is, x.dj);
+      if (isFinite(r.aw)) {
+        var cu = r.np * r.wp.areaAwg * r.wp.parallel + r.ns * r.ws.areaAwg * r.ws.parallel;
+        r.kuReal = cu / (r.aw * 100);
+      }
+      if (isFinite(r.mmf) && r.np > 0) {
+        r.i0 = r.mmf / r.np;
+        r.ipRef = Math.min(r.sUsed, r.sMax) / x.dvp;
+        r.i0pct = r.i0 / r.ipRef * 100;
+      }
+    }
+    return r;
+  }
+  function nName(x) {
+    return 'Núcleo ' + fmt(x.ca * x.cb * x.cfs, 1) + ' cm², ' + fmt(x.dvp, 0) + '/' + fmt(x.dvs, 0) + ' V';
+  }
+  function renderN() {
+    var x = readN(), box = $('nResults'), sv = $('nSaveBox');
+    nCurrent = null;
+    if (!(x.ca > 0 && x.cb > 0 && x.cfs > 0)) {
+      box.innerHTML = '<div class="empty">Ingresa el ancho y el espesor del núcleo para empezar.</div>';
+      sv.hidden = true; return;
+    }
+    var r = calcN(x), k = 0, h = '';
+    if (r.np !== undefined && (r.np < 1 || r.ns < 1)) {
+      box.innerHTML = '<div class="msg-err">Los voltios por espira resultan mayores que la tensión de un devanado. Revisa las medidas del núcleo y las tensiones.</div>';
+      sv.hidden = true; return;
+    }
+    function step(title, body) { k++; h += '<div class="section step"><h3>' + k + '. ' + title + '</h3>' + body + '</div>'; }
+    function note(t, warn) { return '<div class="callout' + (warn ? ' warn' : '') + '">' + t + '</div>'; }
+
+    step('Núcleo', '<div class="big">' + fmt(r.ac, 2) + '<small>cm² netos</small></div>' +
+      '<p class="calc">' + fmt(x.ca, 2) + ' cm × ' + fmt(x.cb, 2) + ' cm = ' + fmt(r.ag, 2) + ' cm² brutos, × ' + fmt(x.cfs, 2) + ' de apilamiento.</p>' +
+      (isFinite(r.aw) ? '<p class="calc">Ventana: ' + fmt(x.cww, 2) + ' × ' + fmt(x.chw, 2) + ' cm = ' + fmt(r.aw, 2) + ' cm².</p>' : ''));
+
+    if (isFinite(r.nRec)) {
+      step('Espiras de prueba', '<div class="big">' + fmt(Math.round(r.nRec), 0) + '<small>espiras</small></div>' +
+        '<p class="calc">Con ' + fmt(x.tv, 0) + ' V, esa cantidad lleva el núcleo a ' + fmt(x.db, 2) + ' T. Enróllalas y agrega una bobina auxiliar de 10 espiras para medir el voltaje inducido.</p>' +
+        note('Seguridad: conecta la prueba con una bombilla de 100 W en serie o con un variac, y con fusible. No toques las conexiones con la red conectada.', false));
+    }
+
+    if (r.hasTest) {
+      var t = '<div class="big">' + fmt(r.vtTest, 3) + '<small>V/esp</small></div>' +
+        '<p class="calc">' + (r.useAux
+          ? fmt(x.tvi, 2) + ' V ÷ ' + fmt(x.tns, 0) + ' espiras (bobina auxiliar).'
+          : fmt(x.tv, 2) + ' V ÷ ' + fmt(x.tnp, 0) + ' espiras (voltaje aplicado).') + '</p>' +
+        '<p class="calc">Inducción en la prueba: ' + fmt(r.bTest, 2) + ' T.</p>';
+      if (isFinite(r.mmf)) t += '<p class="calc">Amperios-vuelta de la prueba: ' + fmt(x.tnp, 0) + ' × ' + fmt(x.ti, 3) + ' A = ' + fmt(r.mmf, 2) + '.</p>';
+      if (r.useAux && r.mismatch > 0.08) {
+        t += note('Los voltios por espira de la auxiliar (' + fmt(r.vtAux, 3) + ') y los del voltaje aplicado (' + fmt(r.vtApp, 3) + ') difieren más de 8 %. Revisa las lecturas o el conteo de espiras.', true);
+      }
+      if (r.bTest > 1.75) {
+        t += note('La inducción de la prueba es muy alta. El núcleo puede estar saturado y la corriente medida no es una referencia confiable. Repite la prueba con más espiras.', true);
+      } else if (isFinite(r.nRec) && r.bTest < x.db - 0.1) {
+        t += note('La prueba llegó a ' + fmt(r.bTest, 2) + ' T, menos que la inducción de diseño (' + fmt(x.db, 2) + ' T). Para probar a la inducción de diseño, usa unas ' + fmt(Math.round(r.nRec), 0) + ' espiras de prueba.', false);
+      }
+      step('Lectura de la prueba', t);
+    }
+
+    if (r.np !== undefined) {
+      step('Espiras del transformador',
+        '<div class="pair"><div><div class="who">Primario</div><div class="big">' + fmt(r.np, 0) + '<small>espiras</small></div></div>' +
+        '<div><div class="who">Secundario</div><div class="big">' + fmt(r.ns, 0) + '<small>espiras</small></div></div></div>' +
+        '<p class="calc">Voltios por espira: ' + fmt(r.vtD, 3) + ' V (4.44 × ' + fmt(r.f, 1) + ' Hz × ' + fmt(x.db, 2) + ' T × ' + fmt(r.ac / 10000, 5) + ' m²).</p>' +
+        '<p class="calc">Primario = ' + fmt(x.dvp, 1) + ' V ÷ ' + fmt(r.vtD, 3) + ' = ' + fmt(x.dvp / r.vtD, 2) + '. Secundario = ' + fmt(x.dvs, 1) + ' V ÷ ' + fmt(r.vtD, 3) + ' = ' + fmt(x.dvs / r.vtD, 2) + '.</p>');
+
+      var p = '<div class="big">' + fmt(r.sUsed, 0) + '<small>VA</small></div>' +
+        '<p class="calc">' + (x.dva > 0 ? 'Potencia que indicaste. ' : 'Es la máxima estimada para este núcleo. ') +
+        'Capacidad máxima estimada: ' + fmt(r.sMax, 0) + ' VA (' + (r.sBy === 'ventana' ? 'con las medidas de la ventana' : 'con una regla aproximada') + ').</p>';
+      if (r.sBy === 'regla') p += note('Sin las medidas de la ventana, la potencia se estima con una regla aproximada (sección bruta ÷ 1.15, al cuadrado). Agrega la ventana para un cálculo más confiable.', false);
+      if (x.dva > 0 && x.dva > r.sMax * 1.05) p += note('La potencia deseada supera la capacidad estimada del núcleo. Baja la potencia o usa un núcleo mayor.', true);
+      p += wireBlock('Devanado primario (' + fmt(x.dvp, 0) + ' V)', r.wp) + wireBlock('Devanado secundario (' + fmt(x.dvs, 0) + ' V)', r.ws);
+      if (isFinite(r.kuReal)) {
+        p += '<p class="calc">Uso de la ventana: ' + fmt(r.kuReal * 100, 0) + ' % (objetivo hasta ' + fmt(r.ku * 100, 0) + ' %).</p>';
+        if (r.kuReal > r.ku * 1.15) p += note('El cobre no cabe con holgura en la ventana. Baja la potencia, sube la densidad de corriente o usa un núcleo con ventana mayor.', true);
+      } else {
+        p += note('Agrega las medidas de la ventana para verificar que el cobre cabe.', false);
+      }
+      step('Potencia y calibre del cobre', p);
+
+      if (isFinite(r.i0)) {
+        var v = '<div class="big">' + fmt(r.i0, 3) + '<small>A</small></div>' +
+          '<p class="calc">' + fmt(r.i0pct, 1) + ' % de la corriente del primario a plena carga (' + fmt(r.ipRef, 2) + ' A). Se estima con los amperios-vuelta de la prueba ÷ las espiras del primario.</p>';
+        if (r.i0pct <= 5) v += note('Es un valor normal para un transformador pequeño.', false);
+        else if (r.i0pct <= 10) v += note('Es algo alto, pero aceptable en transformadores pequeños.', false);
+        else v += note('Es alto. El núcleo puede estar saturado o en mal estado. Baja la inducción de diseño (por ejemplo a 1.3 T) o repite la prueba.', true);
+        if (r.hasTest && isFinite(r.nRec) && r.bTest < x.db - 0.1) {
+          v += note('La prueba se hizo a menor inducción que la de diseño, así que esta estimación puede ser optimista.', false);
+        }
+        step('Corriente en vacío estimada', v);
+      }
+      nCurrent = { x: x, r: r };
+    }
+    box.innerHTML = h;
+    sv.hidden = !nCurrent;
+    if (nCurrent && !$('nnombre').value) $('nnombre').placeholder = nName(x);
+  }
+  function nSummary() {
+    if (!nCurrent) return '';
+    var x = nCurrent.x, r = nCurrent.r;
+    return [
+      'Transformador desde núcleo con prueba de espiras',
+      'Núcleo: ' + fmt(r.ac, 2) + ' cm² netos',
+      r.hasTest ? 'Prueba: ' + fmt(r.vtTest, 3) + ' V/esp, ' + fmt(r.bTest, 2) + ' T' : '',
+      'Voltios por espira de diseño: ' + fmt(r.vtD, 3) + ' V (B ' + fmt(x.db, 2) + ' T)',
+      'Primario: ' + fmt(x.dvp, 0) + ' V, ' + fmt(r.np, 0) + ' espiras, ' + wl(r.wp) + ' (' + fmt(r.ip, 2) + ' A)',
+      'Secundario: ' + fmt(x.dvs, 0) + ' V, ' + fmt(r.ns, 0) + ' espiras, ' + wl(r.ws) + ' (' + fmt(r.is, 2) + ' A)',
+      'Potencia: ' + fmt(r.sUsed, 0) + ' VA',
+      isFinite(r.i0) ? 'Corriente en vacío estimada: ' + fmt(r.i0, 3) + ' A (' + fmt(r.i0pct, 1) + ' %)' : ''
+    ].filter(Boolean).join('\n');
+  }
+  function copyText(text) {
+    function fallback() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        var ok = document.execCommand('copy'); document.body.removeChild(ta);
+        toast(ok ? 'Resumen copiado' : 'No se pudo copiar');
+      } catch (e) { toast('No se pudo copiar'); }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('Resumen copiado'); }, fallback);
+    } else { fallback(); }
+  }
+  function loadN(x) {
+    NIDS.forEach(function (id) { $(id).value = (x[id] == null ? '' : x[id]); });
+    renderN(); setTab('nuc');
+  }
+
+  /* ---------- eventos ---------- */
+  function setTab(id) {
+    ['calc', 'nuc', 'hist', 'guia'].forEach(function (k) {
+      var on = k === id;
+      $('t-' + k).setAttribute('aria-selected', on ? 'true' : 'false');
+      $('tab-' + k).hidden = !on;
+    });
+    if (id === 'hist') renderHist();
+    window.scrollTo(0, 0);
+  }
+  ['calc', 'nuc', 'hist', 'guia'].forEach(function (k) {
+    $('t-' + k).addEventListener('click', function () { setTab(k); });
+  });
+  function syncConexion() {
+    $('rowConexion').hidden = readInputs().fases !== '3';
+  }
+  function syncModo() {
+    var core = readInputs().modo === 'nucleo';
+    ['rowSec', 'rowVt', 'rowB', 'rowF'].forEach(function (id) { $(id).hidden = !core; });
+    $('rowN').hidden = core;
+  }
+  document.querySelectorAll('input[name="modo"]').forEach(function (el) {
+    el.addEventListener('change', function () { syncModo(); render(); });
+  });
+  document.querySelectorAll('input[name="fases"]').forEach(function (el) {
+    el.addEventListener('change', function () { syncConexion(); render(); });
+  });
+  ['conexion', 'kva', 'vp', 'vs', 'n', 'tap', 'sec', 'vt', 'b', 'f', 'pct', 'j'].forEach(function (id) {
+    $(id).addEventListener('input', render);
+    $(id).addEventListener('change', render);
+  });
+  $('btnReset').addEventListener('click', function () {
+    ['kva', 'vp', 'vs', 'n', 'tap', 'sec', 'vt', 'nombre'].forEach(function (id) { $(id).value = ''; });
+    $('pct').value = '2.5'; $('j').value = '3'; $('b').value = '1.6'; $('f').value = '60'; $('conexion').value = 'DY';
+    document.querySelector('input[name="fases"][value="3"]').checked = true;
+    document.querySelector('input[name="modo"][value="espiras"]').checked = true;
+    $('nombre').placeholder = 'Ej. Transformador de 75 kVA, obra Norte';
+    syncConexion(); syncModo(); render();
+  });
+  function guardarItem(item, nameInput) {
+    var list = loadAll();
+    list.unshift(item);
+    list = list.slice(0, 30);
+    var ok = saveAll(list);
+    nameInput.value = '';
+    if (!sb) {
+      toast(ok ? 'Diseño guardado' : 'Guardado solo mientras esta página esté abierta');
+      return Promise.resolve(null);
+    }
+    toast('Guardando en Supabase…', 4000);
+    return enviarSupabase(item).then(function (err) {
+      toast(err ? 'Guardado en este navegador. No se pudo enviar a Supabase: ' + (err.message || 'error desconocido')
+                : 'Diseño guardado en Supabase', err ? 5000 : 2200);
+      return err;
+    });
+  }
+  $('btnSave').addEventListener('click', function () {
+    if (!current) return;
+    guardarItem({ tipo: 'espiras', name: $('nombre').value.trim() || defaultName(current.x), date: Date.now(), x: current.x, r: current.r }, $('nombre'));
+  });
+  $('btnCopy').addEventListener('click', function () {
+    var text = summaryText();
+    function fallback() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        var ok = document.execCommand('copy'); document.body.removeChild(ta);
+        toast(ok ? 'Resumen copiado' : 'No se pudo copiar');
+      } catch (e) { toast('No se pudo copiar'); }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('Resumen copiado'); }, fallback);
+    } else { fallback(); }
+  });
+  $('histPanel').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    var list = loadAll();
+    if (b.dataset.del !== undefined) {
+      list.splice(+b.dataset.del, 1); saveAll(list); renderHist(); toast('Diseño eliminado');
+    } else if (b.dataset.load !== undefined) {
+      var it = list[+b.dataset.load]; if (!it) return;
+      if (it.tipo === 'nucleo') { loadN(it.x); return; }
+      var x = it.x;
+      document.querySelector('input[name="fases"][value="' + x.fases + '"]').checked = true;
+      $('conexion').value = x.conexion;
+      $('kva').value = x.kva; $('vp').value = x.vp; $('vs').value = x.vs;
+      document.querySelector('input[name="modo"][value="' + (x.modo || 'espiras') + '"]').checked = true;
+      $('n').value = x.n; $('tap').value = x.tapRaw; $('pct').value = x.pct; $('j').value = x.j;
+      $('sec').value = (x.sec == null ? '' : x.sec); $('vt').value = (x.vt == null ? '' : x.vt);
+      $('b').value = x.b || 1.6; $('f').value = x.f || 60;
+      syncConexion(); syncModo(); render(); setTab('calc');
+    }
+  });
+
+  NIDS.forEach(function (id) {
+    $(id).addEventListener('input', renderN);
+    $(id).addEventListener('change', renderN);
+  });
+  $('nReset').addEventListener('click', function () {
+    NIDS.forEach(function (id) { $(id).value = (N_DEF[id] || ''); });
+    $('nnombre').value = '';
+    $('nnombre').placeholder = 'Ej. Núcleo E-I del taller';
+    renderN();
+  });
+  $('nSave').addEventListener('click', function () {
+    if (!nCurrent) return;
+    guardarItem({ tipo: 'nucleo', name: $('nnombre').value.trim() || nName(nCurrent.x), date: Date.now(), x: nCurrent.x, r: nCurrent.r }, $('nnombre'));
+  });
+  $('nCopy').addEventListener('click', function () { copyText(nSummary()); });
+
+  syncConexion();
+  syncModo();
+  render();
+  renderN();
+})();
+</script>
+</body>
+</html>
